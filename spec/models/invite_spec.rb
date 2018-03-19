@@ -138,20 +138,44 @@ describe Invite do
     let(:group) { Fabricate(:group) }
     let(:private_category)  { Fabricate(:private_category, group: group) }
     let(:group_private_topic) { Fabricate(:topic, category: private_category) }
-    let(:inviter) { group_private_topic.user }
+    let(:group_owner) { group_private_topic.user }
+    let(:invitee) { Fabricate(:user, username: 'invitee') }
 
     before do
-      group.add_owner(inviter)
-      @invite = group_private_topic.invite_by_email(inviter, iceking)
-    end
+      group.add_owner(group_owner)
+      @invite = group_private_topic.invite_by_email(group_owner, iceking) end
 
     it 'should add the groups to the invite' do
       expect(@invite.groups).to eq([group])
     end
 
+    context 'an existing user' do
+      let(:group_nonmember) { Fabricate(:user, username: 'gnonmember') }
+      let(:group_member) { Fabricate(:user, username: 'gmember') }
+      before do
+	group.add(group_member)
+      end
+
+      it "fails when the inviter is not in the group" do
+        group_private_topic.invite(group_nonmember, invitee.username)
+        expect(Guardian.new(invitee).can_see_topic? group_private_topic).to eq(false)
+      end
+
+      it "fails when the inviter is a group member but not owner" do
+        group_private_topic.invite(group_member, invitee.username)
+        expect(Guardian.new(invitee).can_see_topic? group_private_topic).to eq(false)
+      end
+
+      it "works when the inviter is a group owner" do
+        pending "proposed functionality"
+        group_private_topic.invite(group_owner, invitee.username)
+        expect(Guardian.new(invitee).can_see_topic? group_private_topic).to eq(true)
+      end
+    end
+
     context 'when duplicated' do
       it 'should not duplicate the groups' do
-        expect(group_private_topic.invite_by_email(inviter, iceking)).to eq(@invite)
+        expect(group_private_topic.invite_by_email(group_owner, iceking)).to eq(@invite)
         expect(@invite.groups).to eq([group])
       end
     end
