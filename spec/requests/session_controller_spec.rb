@@ -89,7 +89,7 @@ RSpec.describe SessionController do
       end
 
       context "when user has 2-factor logins" do
-        let!(:user_second_factor) { Fabricate(:user_second_factor_totp, user: user) }
+        let!(:user_second_factor_totp) { Fabricate(:user_second_factor_totp, user: user) }
         let!(:user_second_factor_backup) { Fabricate(:user_second_factor_backup, user: user) }
 
         it "includes that information in the response" do
@@ -308,7 +308,7 @@ RSpec.describe SessionController do
       end
 
       context "when user has 2-factor logins" do
-        let!(:user_second_factor) { Fabricate(:user_second_factor_totp, user: user) }
+        let!(:user_second_factor_totp) { Fabricate(:user_second_factor_totp, user: user) }
         let!(:user_second_factor_backup) { Fabricate(:user_second_factor_backup, user: user) }
 
         describe "errors on incorrect 2-factor" do
@@ -350,7 +350,7 @@ RSpec.describe SessionController do
             it "logs in correctly" do
               post "/session/email-login/#{email_token.token}.json",
                    params: {
-                     second_factor_token: ROTP::TOTP.new(user_second_factor.data).now,
+                     second_factor_token: ROTP::TOTP.new(user_second_factor_totp.data).now,
                      second_factor_method: UserSecondFactor.methods[:totp],
                    }
 
@@ -468,7 +468,7 @@ RSpec.describe SessionController do
             public_key: valid_security_key_data[:public_key],
           )
         end
-        let!(:user_second_factor) { Fabricate(:user_second_factor_totp, user: user) }
+        let!(:user_second_factor_totp) { Fabricate(:user_second_factor_totp, user: user) }
 
         it "doesnt allow logging in if the 2fa params are garbled" do
           post "/session/email-login/#{email_token.token}.json",
@@ -2071,7 +2071,7 @@ RSpec.describe SessionController do
       end
 
       context "when user has TOTP-only 2FA login" do
-        let!(:user_second_factor) { Fabricate(:user_second_factor_totp, user: user) }
+        let!(:user_second_factor_totp) { Fabricate(:user_second_factor_totp, user: user) }
         let!(:user_second_factor_backup) { Fabricate(:user_second_factor_backup, user: user) }
 
         describe "when second factor token is missing" do
@@ -2128,7 +2128,7 @@ RSpec.describe SessionController do
                    params: {
                      login: user.username,
                      password: "myawesomepassword",
-                     second_factor_token: ROTP::TOTP.new(user_second_factor.data).now,
+                     second_factor_token: ROTP::TOTP.new(user_second_factor_totp.data).now,
                      second_factor_method: UserSecondFactor.methods[:totp],
                    }
               expect(response.status).to eq(200)
@@ -2798,7 +2798,7 @@ RSpec.describe SessionController do
   end
 
   describe "#second_factor_auth_show" do
-    let!(:user_second_factor) { Fabricate(:user_second_factor_totp, user: user) }
+    let!(:user_second_factor_totp) { Fabricate(:user_second_factor_totp, user: user) }
 
     before { sign_in(user) }
 
@@ -2871,7 +2871,7 @@ RSpec.describe SessionController do
   end
 
   describe "#second_factor_auth_perform" do
-    let!(:user_second_factor) { Fabricate(:user_second_factor_totp, user: user) }
+    let!(:user_second_factor_totp) { Fabricate(:user_second_factor_totp, user: user) }
 
     before { sign_in(user) }
 
@@ -2880,7 +2880,7 @@ RSpec.describe SessionController do
       nonce = response.parsed_body["second_factor_challenge_nonce"]
 
       freeze_time (SecondFactor::AuthManager::MAX_CHALLENGE_AGE + 1.minute).from_now
-      token = ROTP::TOTP.new(user_second_factor.data).now
+      token = ROTP::TOTP.new(user_second_factor_totp.data).now
       post "/session/2fa.json",
            params: {
              nonce: nonce,
@@ -2907,8 +2907,8 @@ RSpec.describe SessionController do
     it "returns 403 if the user disables the 2FA method in the middle of the 2FA process" do
       post "/session/2fa/test-action", xhr: true
       nonce = response.parsed_body["second_factor_challenge_nonce"]
-      token = ROTP::TOTP.new(user_second_factor.data).now
-      user_second_factor.destroy!
+      token = ROTP::TOTP.new(user_second_factor_totp.data).now
+      user_second_factor_totp.destroy!
       post "/session/2fa.json",
            params: {
              nonce: nonce,
@@ -2922,7 +2922,7 @@ RSpec.describe SessionController do
       post "/session/2fa/test-action", params: { redirect_url: "/ggg" }, xhr: true
       nonce = response.parsed_body["second_factor_challenge_nonce"]
 
-      token = ROTP::TOTP.new(user_second_factor.data).now
+      token = ROTP::TOTP.new(user_second_factor_totp.data).now
       post "/session/2fa.json",
            params: {
              nonce: nonce,
@@ -2946,7 +2946,7 @@ RSpec.describe SessionController do
       post "/session/2fa/test-action", params: { redirect_url: "/ggg" }, xhr: true
       nonce = response.parsed_body["second_factor_challenge_nonce"]
 
-      token = ROTP::TOTP.new(user_second_factor.data).now.to_i
+      token = ROTP::TOTP.new(user_second_factor_totp.data).now.to_i
       token += token == 999_999 ? -1 : 1
       post "/session/2fa.json",
            params: {
