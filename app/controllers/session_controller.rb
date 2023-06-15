@@ -429,6 +429,7 @@ class SessionController < ApplicationController
     if challenge
       json.merge!(
         totp_enabled: user.totp_enabled?,
+        otp_yubikey_enabled: user.otp_yubikey_enabled?,
         backup_enabled: user.backup_codes_enabled?,
         allowed_methods: challenge[:allowed_methods],
       )

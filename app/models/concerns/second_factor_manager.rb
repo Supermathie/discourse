@@ -28,6 +28,31 @@ module SecondFactorManager
     )
   end
 
+  def create_otp_yubikey(token, opts = {})
+    token_id = token[0..11]
+    raise ArgumentError unless token_id.length == 12
+
+    if (result = verify_otp_yubikey(token)).valid?
+      Rails.logger.debug(
+        "[OTP_YUBIKEY] create validation success: user:#{self.username}, token: #{token_id}, result:#{result.status}",
+      )
+    else
+      Rails.logger.info(
+        "[OTP_YUBIKEY] create validation failed: user:#{self.username}, token: #{token_id}, result:#{result.status}",
+      )
+      raise ArgumentError # XXX?
+    end
+
+    UserSecondFactor.create!(
+      {
+        user_id: self.id,
+        method: UserSecondFactor.methods[:otp_yubikey],
+        enabled: true,
+        data: token_id,
+      }.merge(opts),
+    )
+  end
+
   def get_totp_object(data)
     require_rotp
     ROTP::TOTP.new(data, issuer: SiteSetting.title.gsub(":", ""))
@@ -63,12 +88,17 @@ module SecondFactorManager
   end
 
   def otp_enabled?
-    totp_enabled?
+    totp_enabled? || otp_yubikey_enabled?
   end
 
   def totp_enabled?
     !SiteSetting.enable_discourse_connect && SiteSetting.enable_local_logins &&
       self&.user_second_factors.totps.exists?
+  end
+
+  def otp_yubikey_enabled?
+    !SiteSetting.enable_discourse_connect && SiteSetting.enable_local_logins &&
+      self&.user_second_factors.otp_yubikeys.exists?
   end
 
   def backup_codes_enabled?
@@ -145,6 +175,13 @@ module SecondFactorManager
       else
         return invalid_security_key_result
       end
+    when UserSecondFactor.methods[:otp_yubikey]
+      if authenticate_otp_yubikey(second_factor_token)
+        ok_result.used_2fa_method = UserSecondFactor.methods[:otp_yubikey]
+        return ok_result
+      else
+        return invalid_otp_yubikey_result
+      end
     end
 
     # if we have gotten down to this point without being
@@ -162,6 +199,8 @@ module SecondFactorManager
       return backup_codes_enabled?
     when UserSecondFactor.methods[:security_key]
       return security_keys_enabled?
+    when UserSecondFactor.methods[:otp_yubikey]
+      return otp_yubikey_enabled?
     end
     false
   end
@@ -187,6 +226,13 @@ module SecondFactorManager
     invalid_second_factor_authentication_result(
       error_message || I18n.t("login.invalid_security_key"),
       "invalid_security_key",
+    )
+  end
+
+  def invalid_otp_yubikey_result(error_message = nil)
+    invalid_second_factor_authentication_result(
+      error_message || I18n.t("login.otp.yubikey.generic_failure"),
+      "invalid_otp_yubikey",
     )
   end
 
@@ -264,6 +310,41 @@ module SecondFactorManager
       false
     end
     false
+  end
+
+  def verify_otp_yubikey(token)
+    Yubikey::OTP::Verify.new(
+      api_id: SiteSetting.otp_yubikey_api_id,
+      api_key: SiteSetting.otp_yubikey_api_key,
+      otp: token,
+      certificate_chain: :system,
+    )
+  end
+
+  def authenticate_otp_yubikey(token)
+    token_id = token[0..11] # first 12 characters of the token is the Yubikey ID
+
+    otp_yubikey = self&.user_second_factors.otp_yubikeys.find_by(data: token_id)
+    if otp_yubikey.nil?
+      Rails.logger.info(
+        "[OTP_YUBIKEY] authorization failed: user:#{self.username}, token: #{token_id}, result:NO_MATCHING_KEY_ID",
+      )
+      return false
+    end
+
+    result = verify_otp_yubikey(token)
+
+    if result.valid?
+      Rails.logger.debug(
+        "[OTP_YUBIKEY] validation succeeded: user:#{self.username}, token: #{token_id}, result:#{result.status}",
+      )
+      otp_yubikey.update(last_used: DateTime.now)
+    else
+      Rails.logger.info(
+        "[OTP_YUBIKEY] validation failed: user:#{self.username}, token: #{token_id}, result:#{result.status}",
+      )
+    end
+    result.valid?
   end
 
   def hash_backup_code(code, salt)

@@ -1,4 +1,10 @@
 GIT
+  remote: https://github.com/discourse/ruby-yubikey.git
+  revision: 279fc00a5ec6fae03fccff9d37b33956f0b0cca3
+  specs:
+    yubikey (1.4.1)
+
+GIT
   remote: https://github.com/rails/sprockets
   revision: f4d3dae71ef29c44b75a49cfbf8032cce07b423a
   branch: 3.x
@@ -669,6 +675,7 @@ DEPENDENCIES
   webrick
   yaml-lint
   yard
+  yubikey!
 
 BUNDLED WITH
    2.4.4

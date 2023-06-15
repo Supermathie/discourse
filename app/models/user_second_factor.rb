@@ -8,10 +8,12 @@ class UserSecondFactor < ActiveRecord::Base
 
   scope :totps, -> { where(method: UserSecondFactor.methods[:totp], enabled: true) }
 
+  scope :otp_yubikeys, -> { where(method: UserSecondFactor.methods[:otp_yubikey], enabled: true) }
+
   scope :all_totps, -> { where(method: UserSecondFactor.methods[:totp]) }
 
   def self.methods
-    @methods ||= Enum.new(totp: 1, backup_codes: 2, security_key: 3)
+    @methods ||= Enum.new(totp: 1, backup_codes: 2, security_key: 3, otp_yubikey: 4)
   end
 
   def totp_object

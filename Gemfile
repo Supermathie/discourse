@@ -279,3 +279,5 @@ gem "webrick", require: false
 gem "cgi", ">= 0.3.6", require: false
 
 gem "tzinfo-data"
+
+gem "yubikey", git: "https://github.com/discourse/ruby-yubikey.git"

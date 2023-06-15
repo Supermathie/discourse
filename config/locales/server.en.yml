@@ -2664,6 +2664,9 @@ en:
     second_factor_toggle:
       totp: "Use an authenticator app or security key instead"
       backup_code: "Use a backup code instead"
+    otp:
+      yubikey:
+        generic_failure: "There was an error validating the Yubikey OTP login"
 
   second_factor_auth:
     challenge_not_found: "Couldn't find a 2FA challenge in your current session."
