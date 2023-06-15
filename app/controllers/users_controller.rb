@@ -802,7 +802,7 @@ class UsersController < ApplicationController
       security_params = {
         is_developer: UsernameCheckerService.is_developer?(@user.email),
         admin: @user.admin?,
-        second_factor_required: @user.totp_enabled?,
+        second_factor_required: @user.otp_enabled?,
         security_key_required: @user.security_keys_enabled?,
         backup_enabled: @user.backup_codes_enabled?,
         multiple_second_factor_methods: @user.has_multiple_second_factor_methods?,
@@ -900,7 +900,7 @@ class UsersController < ApplicationController
         security_params = {
           is_developer: UsernameCheckerService.is_developer?(@user.email),
           admin: @user.admin?,
-          second_factor_required: @user.totp_enabled?,
+          second_factor_required: @user.otp_enabled?,
           security_key_required: @user.security_keys_enabled?,
           backup_enabled: @user.backup_codes_enabled?,
           multiple_second_factor_methods: @user.has_multiple_second_factor_methods?,

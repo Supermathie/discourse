@@ -125,7 +125,7 @@ class UsersEmailController < ApplicationController
       if params[:show_backup].to_s == "true" && @backup_codes_enabled
         @show_backup_codes = true
       else
-        @show_second_factor = true if @user.totp_enabled?
+        @show_second_factor = true if @user.otp_enabled?
         if @user.security_keys_enabled?
           Webauthn.stage_challenge(@user, secure_session)
           @show_security_key = params[:show_totp].to_s == "true" ? false : true

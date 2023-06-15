@@ -12,7 +12,7 @@ module SecondFactorManager
       :reason,
       :backup_enabled,
       :security_key_enabled,
-      :totp_enabled,
+      :otp_enabled,
       :multiple_second_factor_methods,
       :used_2fa_method,
     )
@@ -62,6 +62,10 @@ module SecondFactorManager
     !!authenticated
   end
 
+  def otp_enabled?
+    totp_enabled?
+  end
+
   def totp_enabled?
     !SiteSetting.enable_discourse_connect && SiteSetting.enable_local_logins &&
       self&.user_second_factors.totps.exists?
@@ -81,23 +85,23 @@ module SecondFactorManager
   end
 
   def has_any_second_factor_methods_enabled?
-    totp_enabled? || security_keys_enabled?
+    otp_enabled? || security_keys_enabled?
   end
 
   def has_multiple_second_factor_methods?
-    security_keys_enabled? && totp_or_backup_codes_enabled?
+    security_keys_enabled? && otp_or_backup_codes_enabled?
   end
 
-  def totp_or_backup_codes_enabled?
-    totp_enabled? || backup_codes_enabled?
+  def otp_or_backup_codes_enabled?
+    otp_enabled? || backup_codes_enabled?
   end
 
   def only_security_keys_enabled?
-    security_keys_enabled? && !totp_or_backup_codes_enabled?
+    security_keys_enabled? && !otp_or_backup_codes_enabled?
   end
 
-  def only_totp_or_backup_codes_enabled?
-    !security_keys_enabled? && totp_or_backup_codes_enabled?
+  def only_otp_or_backup_codes_enabled?
+    !security_keys_enabled? && otp_or_backup_codes_enabled?
   end
 
   def remaining_backup_codes
@@ -106,7 +110,7 @@ module SecondFactorManager
 
   def authenticate_second_factor(params, secure_session)
     ok_result = SecondFactorAuthenticationResult.new(true)
-    return ok_result if !security_keys_enabled? && !totp_or_backup_codes_enabled?
+    return ok_result if !security_keys_enabled? && !otp_or_backup_codes_enabled?
 
     second_factor_token = params[:second_factor_token]
     second_factor_method = params[:second_factor_method]&.to_i
@@ -207,7 +211,7 @@ module SecondFactorManager
       reason,
       backup_codes_enabled?,
       security_keys_enabled?,
-      totp_enabled?,
+      otp_enabled?,
       has_multiple_second_factor_methods?,
     )
   end

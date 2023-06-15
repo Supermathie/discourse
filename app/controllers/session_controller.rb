@@ -336,7 +336,7 @@ class SessionController < ApplicationController
       response = { can_login: true, token: token, token_email: matched_token.email }
 
       matched_user = matched_token.user
-      if matched_user&.totp_enabled?
+      if matched_user&.otp_enabled?
         response.merge!(
           second_factor_required: true,
           backup_codes_enabled: matched_user&.backup_codes_enabled?,

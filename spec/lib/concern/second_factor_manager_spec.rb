@@ -156,10 +156,10 @@ RSpec.describe SecondFactorManager do
     end
   end
 
-  describe "#only_totp_or_backup_codes_enabled?" do
+  describe "#only_otp_or_backup_codes_enabled?" do
     it "returns true if totp enabled and security key disabled" do
       disable_security_key
-      expect(user.only_totp_or_backup_codes_enabled?).to eq(true)
+      expect(user.only_otp_or_backup_codes_enabled?).to eq(true)
     end
   end
 
